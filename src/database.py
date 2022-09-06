@@ -12,6 +12,7 @@ logger = logging.getLogger("OSqlite")
 # stable
 StrOrBytesPath: TypeAlias = str | bytes | PathLike[str] | PathLike[bytes]
 
+
 class Database():
 
     def __init__(self,
@@ -104,7 +105,7 @@ class Database():
         """
         将上一次构建的命令提交给数据库
         """
-        self.cursor.execute(self._command,self._value)
+        self.cursor.execute(self._command, self._value)
 
     def create_table(self, name: str) -> Self:
         """
@@ -114,20 +115,25 @@ class Database():
             name (str): 表的名字
         """
         self._cache_command["_name"] = name
-        self._cache_command["_handle"] = 'create_table' 
+        self._cache_command["_handle"] = 'create_table'
         return self
 
-    def key(self, name: str, type: str = 'TEXT', primary_key: bool = False, not_null: bool = False) -> Self:
+    def key(self, name: str, type: str = 'TEXT', primary_key: bool = False, unique: bool = False,
+            not_null: bool = False, default: str = '') -> Self:
         """
-        构建数据库的键
+        构建在表中的键
 
         Args:
             name (str): 键的名字
-            type (str, DataType): 键的类型. 默认为 'TEXT'.
+            type (str, DataType): 键的类型. 默认为 TEXT.
             primary_key (bool): 是否为主键. 默认为 False.
             not_null (bool): 是否不为空. 默认为 False.
+            unique (bool): 是否允许储存键里两个相同的值. 默认为 False
+            default (str) 设置表中默认的值
         """
-        _key = 'PRIMARY KEY' if (primary_key) else ''
-        _key = _key + ' NOT NULL' if (not_null) else _key
+        # _key = 'PRIMARY KEY' if (primary_key) else ''
+        # _key = _key + ' NOT NULL' if (not_null) else _key
+        _key = ''
         self._cache_command["_keys"].append(f'{name} {type} {_key}')
         return self
+    
