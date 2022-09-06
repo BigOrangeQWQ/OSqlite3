@@ -2,7 +2,7 @@ from collections import deque
 import logging
 from os import PathLike
 from sqlite3 import Connection, Cursor, connect
-from typing import Dict, List, TypeAlias
+from typing import Any, Deque, Dict, List, TypeAlias
 from typing_extensions import Self
 
 from .typing import DataType
@@ -30,8 +30,10 @@ class Database():
         self.connection: Connection
         self.cursor: Cursor
         self.tables: List[str] = []
-        self.deque = deque()
-        self._cache_command = {
+        self.deque: Deque = deque()
+        self._command: str = ''
+        self._value: tuple = ()
+        self._cache_command: dict[str, Any] = {
             '_name': str,
             '_handle': str,
             '_key': list,
@@ -39,20 +41,20 @@ class Database():
 
     def connect(self):
         """
-        try to connnect database
+        对数据库进行链接
         """
         self.connection = connect(self.database, **self.kwargs)
         return self
 
     def logger(self, message: str):
         """
-        database logging
+        log 相关
         """
         logger.info(message)
 
     def close(self):
         """
-        commit and close database
+        对数据库进行一次提交后关闭
         """
         self.logger("正在储存并关闭数据库")
         self.connection.commit()
@@ -60,7 +62,7 @@ class Database():
 
     def unsafe_close(self):
         """
-        close database , but not commit.
+        关闭数据库，但不保存
         """
         self.connection.close()
 
@@ -79,23 +81,53 @@ class Database():
         self.connection.rollback()
         return self
 
+    def build(self):
+        """
+        构建 SQL 语句
+        """
+        __c: dict[str, Any] = self._cache_command
+        match (__c['_handle']):
+            case 'create_table':
+                self._command = f"CREATE TABLE {__c['name']}({','.join(__c['_keys'])});"
+                return self
+
+    def show(self):
+        """
+        返回上一次构建的 SQL 语句
+
+        Returns:
+            str: SQL 语句
+        """
+        return self._cache_command
+
     def create_table(self, name: str) -> Self:
-        """create a table
+        """
+        新建一个表
 
         Args:
-            name (str): table name
+            name (str): 表的名字
         """
         self._cache_command["_name"] = name
         self._cache_command["_handle"] = 'create_table' 
         return self
 
     def key(self, name: str, type: str = 'TEXT', primary_key: bool = False, not_null: bool = False) -> Self:
+        """
+        构建数据库的键
+
+        Args:
+            name (str): 键的名字
+            type (str, DataType): 键的类型. 默认为 'TEXT'.
+            primary_key (bool): 是否为主键. 默认为 False.
+            not_null (bool): 是否不为空. 默认为 False.
+        """
         _key = 'PRIMARY KEY' if (primary_key) else ''
         _key = _key + ' NOT NULL' if (not_null) else _key
         self._cache_command["_keys"].append(f'{name} {type} {_key}')
         return self
-
-    def show(self):
-        pass
-
-# testgit remote add origin git@github.com:BigOrangeQWQ/OSqlite3.git
+    
+    def request(self):
+        """
+        将上一次构建的命令提交给数据库
+        """
+        self.cursor.execute(self._command,self._value)

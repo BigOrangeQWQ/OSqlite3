@@ -9,3 +9,4 @@ class DataType():
     
     def __getattribute__(self, __name: str) -> str:
         return __name
+    
