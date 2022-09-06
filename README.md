@@ -13,5 +13,6 @@ from OSqlite import Database
 from OSqlite import DataType
 
 db = Database("test_sqlite").connect()
-db.create_table("test_table").key(name="ID", type= DataType.INT, primary_key=True).key("name", DataType.TEXT).request()
+db.create_table("test_table").key(name="ID", type= DataType.INT, primary_key=True)\
+                             .key("name", DataType.TEXT).request()
 ```
