@@ -2,10 +2,8 @@ from collections import deque
 import logging
 from os import PathLike
 from sqlite3 import Connection, Cursor, connect
-from typing import Any, Deque, Dict, List, TypeAlias
+from typing import Any, Deque, List, TypeAlias
 from typing_extensions import Self
-
-from .typing import DataType
 
 logger = logging.getLogger("OSqlite")
 
@@ -31,8 +29,8 @@ class Database():
         self.connection: Connection
         self.cursor: Cursor
         self.tables: List[str] = []
-        self.deque: Deque = deque()
-        self._command: str = ''
+        self._command: Deque = deque()
+        
         self._value: tuple = ()
         self._cache_command: dict[str, Any] = {
             '_name': str,
@@ -89,7 +87,7 @@ class Database():
         __c: dict[str, Any] = self._cache_command
         match (__c['_handle']):
             case 'create_table':
-                self._command = f"CREATE TABLE {__c['name']}({','.join(__c['_keys'])});"
+                self._command.appendleft(f"CREATE TABLE {__c['name']}({','.join(__c['_keys'])});")
                 return self
 
     def show(self):
@@ -99,14 +97,16 @@ class Database():
         Returns:
             str: SQL 语句
         """
-        return self._command
+        __c = self._command.pop()
+        self._command.append(__c)
+        return __c
 
     def request(self):
         """
         将命令构建并传输给数据库
         """
         self.build()
-        self.cursor.execute(self._command, self._value)
+        self.cursor.execute(self._command.pop(), *self._value)
 
     def create_table(self, name: str) -> Self:
         """
@@ -137,4 +137,8 @@ class Database():
         _key = ''
         self._cache_command["_keys"].append(f'{name} {type} {_key}')
         return self
+    
+    def check_eq(self,a,b):
+        pass
+    
     
