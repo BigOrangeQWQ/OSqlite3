@@ -1,6 +1,6 @@
 class DataType():
     NULL = 'NULL'
-    INTERGER = 'INTEGER'
+    INT = 'INTEGER'
     TEXT = 'TEXT'
     BLOB = 'BLOB'
     REAL = 'REAL'
