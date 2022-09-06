@@ -68,7 +68,7 @@ class Database():
 
     def save(self) -> Self:
         """
-        commit database
+        储存数据库
         """
         self.logger("正在储存数据库")
         self.connection.commit()
@@ -76,7 +76,7 @@ class Database():
 
     def rollback(self) -> Self:
         """
-        rollback last handle
+        回退上次操作
         """
         self.connection.rollback()
         return self
@@ -99,6 +99,12 @@ class Database():
             str: SQL 语句
         """
         return self._cache_command
+
+    def request(self):
+        """
+        将上一次构建的命令提交给数据库
+        """
+        self.cursor.execute(self._command,self._value)
 
     def create_table(self, name: str) -> Self:
         """
@@ -125,9 +131,3 @@ class Database():
         _key = _key + ' NOT NULL' if (not_null) else _key
         self._cache_command["_keys"].append(f'{name} {type} {_key}')
         return self
-    
-    def request(self):
-        """
-        将上一次构建的命令提交给数据库
-        """
-        self.cursor.execute(self._command,self._value)
