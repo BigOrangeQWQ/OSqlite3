@@ -99,12 +99,13 @@ class Database():
         Returns:
             str: SQL 语句
         """
-        return self._cache_command
+        return self._command
 
     def request(self):
         """
-        将上一次构建的命令提交给数据库
+        将命令构建并传输给数据库
         """
+        self.build()
         self.cursor.execute(self._command, self._value)
 
     def create_table(self, name: str) -> Self:
