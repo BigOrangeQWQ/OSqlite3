@@ -1,6 +1,7 @@
 from collections import deque
 import logging
 from os import PathLike
+from re import S
 from sqlite3 import Connection, Cursor, connect
 from typing import Any, Deque, List, TypeAlias
 from typing_extensions import Self
@@ -88,7 +89,9 @@ class Database():
         match (__c['_handle']):
             case 'create_table':
                 self._command.appendleft(f"CREATE TABLE {__c['name']}({','.join(__c['_keys'])});")
-                return self
+            case 'delete_table':
+                self._command.appendleft(f"DROP TABLE {__c['name']}")
+        return self
 
     def show(self):
         """
@@ -107,6 +110,7 @@ class Database():
         """
         self.build()
         self.cursor.execute(self._command.pop(), *self._value)
+        return self
 
     def create_table(self, name: str) -> Self:
         """
@@ -123,6 +127,7 @@ class Database():
             not_null: bool = False, default: str = '') -> Self:
         """
         构建在表中的键
+        但还有check约束没有加进来
 
         Args:
             name (str): 键的名字
@@ -138,7 +143,12 @@ class Database():
         self._cache_command["_keys"].append(f'{name} {type} {_key}')
         return self
     
-    def check_eq(self,a,b):
-        pass
-    
-    
+    def delete_table(self, name: str):
+        """
+        删除一个表
+
+        Args:
+            name (str): 表的名字
+        """
+        self._cache_command["name"] = name
+        self._cache_command["handle"] = 'delete_table'

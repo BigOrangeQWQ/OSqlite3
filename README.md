@@ -2,7 +2,7 @@
 对 Sqlite3 库本身进行了一个简单的链式封装
 以更好的方便的使用sqlite数据库
 
-## 安装 OrangeSqlite3
+## 安装 OrangeSqlite3[暂时并未发布到pypi]
 
 ```
 pip install OSqlite3
@@ -13,6 +13,6 @@ from OSqlite import Database
 from OSqlite import DataType
 
 db = Database("test_sqlite").connect()
-db.create_table("test_table").key(name="ID", type= DataType.INT, primary_key=True)\
+db.create_table("test_table").key(name="ID", type= DataType.INT, primary_key=True) \
                              .key("name", DataType.TEXT).request()
 ```
