@@ -152,3 +152,5 @@ class Database():
         """
         self._cache_command["name"] = name
         self._cache_command["handle"] = 'delete_table'
+        
+        
