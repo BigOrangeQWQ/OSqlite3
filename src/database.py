@@ -44,6 +44,7 @@ class Database():
         对数据库进行链接
         """
         self.connection = connect(self.database, **self.kwargs)
+        self.cursor = self.connection.cursor()
         return self
 
     def logger(self, message: str):
