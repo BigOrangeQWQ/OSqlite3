@@ -48,7 +48,7 @@ class Database():
         self._cursor = self._connection.cursor()
         return self
 
-    def logger(self, message: str):
+    def log(self, message: str):
         """
         log 相关
         """
@@ -58,7 +58,7 @@ class Database():
         """
         对数据库进行一次提交后关闭
         """
-        self.logger("正在储存并关闭数据库")
+        self.log("正在储存并关闭数据库")
         self._connection.commit()
         self._connection.close()
 
@@ -72,7 +72,7 @@ class Database():
         """
         储存数据库
         """
-        self.logger("正在储存数据库")
+        self.log("正在储存数据库")
         self._connection.commit()
         return self
 
@@ -151,14 +151,12 @@ class Database():
         Args:
             name (str): 表的名字
         """
-        self._cache_command["name"] = name
-        self._cache_command["handle"] = 'delete_table'
+        self._cache_command["_name"] = name
+        self._cache_command["_handle"] = 'delete_table'
 
     def table(self, cls):
         """
         表的解析与添加
-
-        Args
         """
         def getattr(name):
             try:
@@ -235,21 +233,3 @@ class Model:
     def __setattr__(self, __name: str, __value: Any) -> None:
         self._values[__name] = __value
         return None
-
-
-db = Database("dwda.sqlite").connect()
-
-@db.table
-class Test(Model):
-    omg: str = Setting(default="sdhawta")
-    test: Optional[int]
-
-
-db.close()
-
-# a = Test(omg='dadadada.sqlite')
-# print(dir(a), a._kwargs)
-# a.omg="g"
-# with db as s:
-# s.add(a)
-#     s.select(Test).where()

@@ -14,15 +14,36 @@
     
 # print(test().condition() == "dawda")
 
-from typing import Any, Optional
+# from typing import Any, Optional
 
-def Setting(default: Optional[str]) -> Any:
-    return "dsdadadas"
+# def Setting(default: Optional[str]) -> Any:
+#     return "dsdadadas"
     
 
-class test:
-    odaw: Optional[int] = Setting(default='dawdawd')
-    dowu: str
+# class test:
+#     odaw: Optional[int] = Setting(default='dawdawd')
+#     dowu: str
      
     
-print(test().__getattribute__('odaw'))
+# print(test().__getattribute__('odaw'))
+
+from src.database import Database, Model, Setting
+from typing import Optional
+
+db = Database("dwda.sqlite").connect()
+
+@db.table
+class Test(Model):
+    omg: str = Setting(default="sdhawta")
+    test: Optional[int]
+
+db.close()
+
+#or 
+
+# a = Test(omg='dadadada.sqlite')
+# print(dir(a), a._kwargs)
+# a.omg="g"
+# with db as s:
+# s.add(a)
+#     s.select(Test).where()
