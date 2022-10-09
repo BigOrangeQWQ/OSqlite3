@@ -1,4 +1,4 @@
-class DataType():
+class DataType:
     NULL = 'NULL'
     INT = 'INTEGER'
     TEXT = 'TEXT'
