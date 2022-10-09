@@ -27,14 +27,14 @@ class Database():
             kwargs (dict)
         """
         self._database: str | bytes | PathLike[str] | PathLike[bytes] = database
-        self._command: deque = deque()
+        self._command: Deque = deque()
         self.__kwargs: Dict = kwargs
         self._connection: Connection
         self._cursor: Cursor
         self._tables: Dict[str, object] = {}
 
         self._value: tuple = ()
-        self._cache_command: dict[str, Any] = {
+        self._cache_command: Dict[str, Any] = {
             '_name': '',
             '_handle': '',
             '_keys': [],
@@ -164,10 +164,10 @@ class Database():
             except:
                 return None
 
-        anno = cls.__annotations__
-        for i in cls.__annotations__:
-            self.key(i, self.get_sql_type(anno[i]), getattr(i))
-        self.create_table(cls.__name__).build().request()
+        _anno = cls.__annotations__
+        for i in _anno:
+            self.key(i, self.get_sql_type(_anno[i]), getattr(i))
+        self.create_table(cls.__name__).request()
 
         return cls
 
@@ -197,11 +197,6 @@ class Database():
 
     def __exit__(self, exc_ty, exc_val, tb):
         self.close()
-
-    # def type_handler(self, cls):
-    #     if (isinstance(cls, str)):
-    #         return DataType.TEXT
-        # if
 
 
 def Setting(primary_key: bool = False,
