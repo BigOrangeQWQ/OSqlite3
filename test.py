@@ -27,23 +27,45 @@
     
 # print(test().__getattribute__('odaw'))
 
-from src.database import Database, Model, Setting
-from typing import Optional
+# from src.database import Database, Model, Setting
+# from typing import Optional
+
+from mimetypes import init
+from typing import Any, Optional
+from src.database import Database
+from src.model import Model
+from src.utils import Setting
+
 
 db = Database("dwda.sqlite").connect()
 
 @db.table
 class Test(Model):
     omg: str = Setting(default="sdhawta")
-    test: Optional[int]
+    doing: int
 
-db.close()
 
-#or 
-
-# a = Test(omg='dadadada.sqlite')
-# print(dir(a), a._kwargs)
+a = Test(omg='dadadada')
+print(a._values)
+# print(dir(Test))
+# # print(dir(a), a._kwargs)
 # a.omg="g"
-# with db as s:
-# s.add(a)
+db.add(a)
+db.close()
+# print(Test.__dict__)
+# print(Test.__getattribute__(Test,'omg'))
+# print(Test.__dict__['omg'])
 #     s.select(Test).where()
+
+# from src.model import Model
+
+
+# class Test(Model):
+#     omg: str
+#     adawdaw: str
+
+# g= ["d", 'f']
+# def a(b, c):
+#     print(b,"   ",c)
+    
+# a(*g)
