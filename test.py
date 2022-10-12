@@ -32,26 +32,32 @@
 
 from mimetypes import init
 from typing import Any, Optional
-from src.database import Database
+from src.database import DataBase
 from src.model import Model
 from src.utils import Setting
 
 
-db = Database("dwda.sqlite").connect()
+db = DataBase("dwda.sqlite")
 
 @db.table
 class Test(Model):
     omg: str = Setting(default="sdhawta")
     doing: int
 
+b = Test(doing=3)
+a = Test(omg='dwada',doing=1)
+print(a,b)
+with db.connect() as s:
+    s.add(a)
+    s.add(b)
 
-a = Test(omg='dadadada')
-print(a._values)
-# print(dir(Test))
-# # print(dir(a), a._kwargs)
-# a.omg="g"
-db.add(a)
-db.close()
+# a = Test(doing=3)
+# # print(a._values)
+# # print(dir(Test))
+# # # print(dir(a), a._kwargs)  
+# # a.omg="g"
+# db.add(a)
+# db.close()
 # print(Test.__dict__)
 # print(Test.__getattribute__(Test,'omg'))
 # print(Test.__dict__['omg'])
