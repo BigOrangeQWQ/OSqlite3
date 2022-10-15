@@ -30,26 +30,26 @@
 # from src.database import Database, Model, Setting
 # from typing import Optional
 
-from mimetypes import init
-from typing import Any, Optional
-from src.database import DataBase
-from src.model import Model
-from src.utils import Setting
+# from mimetypes import init
+# from typing import Any, Optional
+# from src.database import DataBase
+# from src.model import Model
+# from src.utils import Setting
 
 
-db = DataBase("dwda.sqlite")
+# db = DataBase("dwda.sqlite")
 
-@db.table
-class Test(Model):
-    omg: str = Setting(default="sdhawta")
-    doing: int
+# @db.table
+# class Test(Model):
+#     omg: str = Setting(default="sdhawta")
+#     doing: int
 
-b = Test(doing=3)
-a = Test(omg='dwada',doing=1)
-print(a,b)
-with db.connect() as s:
-    s.add(a)
-    s.add(b)
+# b = Test(doing=3)
+# a = Test(omg='dwada',doing=1)
+# print(a,b)
+# with db.connect() as s:
+#     s.add(a)
+#     s.add(b)
 
 # a = Test(doing=3)
 # # print(a._values)
@@ -75,3 +75,12 @@ with db.connect() as s:
 #     print(b,"   ",c)
     
 # a(*g)
+
+# import inspect
+
+# # print(('d' == 'h').__class__.__dict__)
+
+# def out():
+#     inspect.getsource()
+
+# out()
