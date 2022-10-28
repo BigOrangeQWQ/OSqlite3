@@ -92,5 +92,7 @@ class Test(Model):
     omg: str = Setting(default='ddd')
     doing: int
     
-print(Test.__annotations__)
-    
+
+a = Test(doing=1,omg="Fd")
+with db.connect() as s:
+    s.add(a)

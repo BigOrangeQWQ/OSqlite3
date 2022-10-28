@@ -1,6 +1,6 @@
 # OrangeSqlite3
 对 Sqlite3 库本身进行了一个简单的封装  
-以更好的方便的调用sqlite  
+以更好的方便的调用Sqlite  
 如有使用需求请搜索SqlModel  
 
 ## 安装 OrangeSqlite3
@@ -15,6 +15,18 @@
 from src.database import Database, Model, Setting
 from typing import Optional
 
+db = Database("test.sqlite")
+
+@db.table
+class Test(Model):
+    omg: str = Setting(default="default")
+    test: Optional[int]
+```
+或者这样使用
+```py
+from src.database import Database, Model, Setting
+from typing import Optional
+
 db = Database("test.sqlite").connect()
 
 @db.table
@@ -22,11 +34,10 @@ class Test(Model):
     omg: str = Setting(default="default")
     test: Optional[int]
 
-db.close()
+a=Test(omg='test',test=1)
+with db.connect() as s:
+    s.add(a)
 ```
 ## 鸽子计划
-· 支持更多的语句  
-· 对Setting入参的支持  
-· 支持上下文操作  
-· 覆写Model  
+· 支持更多的语句   
 · 支持写入数据库  

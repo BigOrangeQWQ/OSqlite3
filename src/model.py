@@ -1,5 +1,3 @@
-from typing import Any, Dict
-
 class Model:
 
     def __init__(self, **kwargs):

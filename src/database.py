@@ -37,8 +37,6 @@ class DataBaseKey:
 
     def __ge__(self, __o: object) -> str:
         return f'{self.name} >= {__o}'
-    
-
 
 class CommandBuilder:
 
@@ -95,8 +93,9 @@ class CommandBuilder:
         self._cache = values
         return self
 
-    def select(self,):
-        pass
+    def select(self,*keys):
+        self._handle = 'select'
+        self._value = list(keys)
 
     def where(self, statement):
         pass 
@@ -112,12 +111,14 @@ class CommandBuilder:
             case 'create_table':
                 __r = f"CREATE TABLE IF NOT EXISTS {self._name}({','.join([str(i) for i in self._keys])});"
             case 'delete_table':
-                __r = f"DROP TABLE {self._name}"
+                __r = f"DROP TABLE {self._name};"
             case 'insert':
                 __r = f"INSERT INTO {self._name} ({','.join([i for i in self._cache])}) " + \
                     f"VALUES ({','.join(['?' for i in self._cache])});"
                 self._value: List = [self._cache.get(
                     i, None) for i in self._cache]
+            case 'select':
+                __r = f"SELECT {','.join(self._value)} FROM {self._name};"
         return [__r, self._value]
 
 
@@ -259,5 +260,5 @@ class DataBase():
         self.connect()
         return self
 
-    def __exit__(self, exc_ty, exc_val, tb):
+    def __exit__(self, exc_type, exc_value, traceback):
         self.close()
