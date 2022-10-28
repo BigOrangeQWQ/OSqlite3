@@ -37,12 +37,6 @@
 # from src.utils import Setting
 
 
-# db = DataBase("dwda.sqlite")
-
-# @db.table
-# class Test(Model):
-#     omg: str = Setting(default="sdhawta")
-#     doing: int
 
 # b = Test(doing=3)
 # a = Test(omg='dwada',doing=1)
@@ -84,3 +78,19 @@
 #     inspect.getsource()
 
 # out()
+
+# from src.model import Model
+# from src.utils import Setting
+
+from src import Model, Setting, DataBase
+
+db = DataBase("dwda.sqlite")
+
+
+@db.table
+class Test(Model):
+    omg: str = Setting(default='ddd')
+    doing: int
+    
+print(Test.__annotations__)
+    

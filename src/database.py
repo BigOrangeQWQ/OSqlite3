@@ -10,6 +10,35 @@ from .model import Model
 
 logger = getLogger("OSqlite")
 
+class DataBaseKey:
+
+    def __init__(self, name: str, type: str = 'TEXT', other: str = '') -> None:
+        self.name = name
+        self.type = type
+        self.other = other
+
+    def __str__(self) -> str:
+        return f'{self.name} {self.type} {self.other}'
+
+    def __eq__(self, __o: object) -> str:
+        return f'{self.name} == {__o}'
+
+    def __lt__(self, __o: object) -> str:
+        return f'{self.name} < {__o}'
+
+    def __le__(self, __o: object) -> str:
+        return f'{self.name} <= {__o}'
+
+    def __ne__(self, __o: object) -> str:
+        return f'{self.name} != {__o}'
+
+    def __gt__(self, __o: object) -> str:
+        return f'{self.name} > {__o}'
+
+    def __ge__(self, __o: object) -> str:
+        return f'{self.name} >= {__o}'
+    
+
 
 class CommandBuilder:
 
@@ -46,8 +75,7 @@ class CommandBuilder:
             type (str): type. default is TEXT.
             other (str): other setting. default is  None. 
         """
-        self._keys.append(
-            f'{name} {type} {other}')
+        self._keys.append(DataBaseKey(name,type,other))
         return self
 
     def delete_table(self):
@@ -67,14 +95,14 @@ class CommandBuilder:
         self._cache = values
         return self
 
-    def select(self, ):
+    def select(self,):
         pass
 
-    def where(self):
-        pass
+    def where(self, statement):
+        pass 
 
     @property
-    def build(self) -> List[str|list]:
+    def build(self) -> List[str | list]:
         """
         构建 SQL 语句
         """
@@ -82,13 +110,14 @@ class CommandBuilder:
         __r = ''
         match (self._handle):
             case 'create_table':
-                __r = f"CREATE TABLE IF NOT EXISTS {self._name}({','.join(self._keys)});"
+                __r = f"CREATE TABLE IF NOT EXISTS {self._name}({','.join([str(i) for i in self._keys])});"
             case 'delete_table':
                 __r = f"DROP TABLE {self._name}"
             case 'insert':
                 __r = f"INSERT INTO {self._name} ({','.join([i for i in self._cache])}) " + \
                     f"VALUES ({','.join(['?' for i in self._cache])});"
-                self._value: List = [self._cache.get(i, None) for i in self._cache]
+                self._value: List = [self._cache.get(
+                    i, None) for i in self._cache]
         return [__r, self._value]
 
 
@@ -96,7 +125,7 @@ class DataBase():
 
     def __init__(self, database: Union[str, bytes, PathLike[str], PathLike[bytes]],
                  **kwargs
-                ):
+                 ):
         """
         init database
 
@@ -104,14 +133,14 @@ class DataBase():
             database (StrOrBytesPath)
             kwargs (dict)
         """
-        self._data = Dict 
+        self._data = Dict
         self._database: Union[str, bytes,
-                            PathLike[str], PathLike[bytes]] = database
+                              PathLike[str], PathLike[bytes]] = database
         self._command: Deque[List[Any]] = deque()
         self.__kwargs: Dict[Any, Any] = kwargs
         self._connection: Connection
         self._cursor: Cursor
-        
+
     def connect(self) -> Self:
         """
         connect sqlite
@@ -160,7 +189,7 @@ class DataBase():
         """
         __c = self._command.pop()
         self._command.append(__c)
-        return __c 
+        return __c
 
     def pop(self) -> List:
         """
@@ -184,14 +213,9 @@ class DataBase():
         """
         _anno = cls.__annotations__
         cmd = CommandBuilder(cls)
-        def getattr(name):
-            try:
-                return cls.__dict__[name]
-            except:
-                return ''
-            
         for i in _anno:
-            cmd.key(i, self.get_type(_anno[i]), getattr(i))
+            cmd.key(i, self.get_type(_anno[i]), getattr(cls,i,''))
+            setattr(cls, i, DataBaseKey(i, self.get_type(_anno[i]), getattr(cls,i,'')))
         self.append(cmd.create_table().build)
         return cls
 
@@ -200,8 +224,12 @@ class DataBase():
         add values to tables
         """
         cmd = CommandBuilder(cls).insert({i: cls._get_values.get(i)
-                        for i in cls._get_values})
+                                        for i in cls._get_values})
         self.append(cmd.build).request()
+        return self
+
+    def select(self, cls) -> Self:
+        cmd = CommandBuilder(cls).select()
         return self
 
     def get_type(self, name) -> str:
@@ -226,7 +254,7 @@ class DataBase():
     def append(self, command) -> Self:
         self._command.appendleft(command)
         return self
-    
+
     def __enter__(self):
         self.connect()
         return self
