@@ -82,17 +82,22 @@
 # from src.model import Model
 # from src.utils import Setting
 
-from src import Model, Setting, DataBase
+from src import Model, Setting, DataBase, DataBaseKey
 
 db = DataBase("dwda.sqlite")
 
-
-@db.table
+#注册表
+# @db.table
 class Test(Model):
-    omg: str = Setting(default='ddd')
-    doing: int
+    omg = DataBaseKey(type='TEXT', other='NOT NULL', name='omg')
+    doing= DataBaseKey(type='TEXT', other='NOT NULL', name='doing')
+    
+# a = Test(doing=1,omg="Fd")
+
+# with db as s:
+#     s.add(a)
+
     
 
-a = Test(doing=1,omg="Fd")
-with db.connect() as s:
-    s.add(a)
+print(type(Test.omg == 'dddd'))
+print((Test.omg == 'dddd') & (Test.doing == 'dawdawd')) 
