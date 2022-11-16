@@ -82,22 +82,17 @@
 # from src.model import Model
 # from src.utils import Setting
 
+from dataclasses import dataclass
+from typing import Any, Deque, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing_extensions import dataclass_transform
 from src import Model, Setting, DataBase, DataBaseKey
+import typing 
 
+
+#注册一个数据库
 db = DataBase("dwda.sqlite")
 
-#注册表
-# @db.table
+@db.table
 class Test(Model):
-    omg = DataBaseKey(type='TEXT', other='NOT NULL', name='omg')
-    doing= DataBaseKey(type='TEXT', other='NOT NULL', name='doing')
-    
-# a = Test(doing=1,omg="Fd")
-
-# with db as s:
-#     s.add(a)
-
-    
-
-print(type(Test.omg == 'dddd'))
-print((Test.omg == 'dddd') & (Test.doing == 'dawdawd')) 
+    omg: str
+    doing: int = Setting(default=1)

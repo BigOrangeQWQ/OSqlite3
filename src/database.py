@@ -1,14 +1,25 @@
 from collections import deque
+from dataclasses import dataclass
 from os import PathLike
 from sqlite3 import Connection, Cursor, connect
-from typing import Any, Deque, Dict, List, Optional, Type, Union
+from typing import Any, Deque, Dict, List, Optional, Tuple, Type, TypeVar, Union
 from logging import getLogger
-from typing_extensions import Self
+from typing_extensions import Self, dataclass_transform
 
 from .model import Model
 
-
 logger = getLogger("OSqlite")
+
+_T = TypeVar("_T")
+SQL_TYPES: Dict[Type, str] = {
+    str: "TEXT",
+    int: "INT",
+    float: "REAL",
+    bytes: "BLOB",
+    Optional[str]: "TEXT",
+    Optional[int]: "INT",
+    Optional[float]: "REAL",
+    Optional[bytes]: "BLOB"}
 
 
 class DatabaseBoolStr:
@@ -23,16 +34,16 @@ class DatabaseBoolStr:
 
     def __repr__(self) -> str:
         return self.string
-    
-    
-class DataBaseKey:
+
+
+class DataBaseKey(DatabaseBoolStr):
 
     def __init__(self, name: str, type: str = 'TEXT', other: str = '') -> None:
         self.name = name
         self.type = type
         self.other = other
         self._not = ''
-        
+
     def __repr__(self) -> str:
         return f'{self.name} {self.type} {self.other}'
 
@@ -60,25 +71,26 @@ class DataBaseKey:
 
     def __not__(self):
         self._not = 'NOT'
-        
+
     def __contains__(self, __o: object) -> DatabaseBoolStr:
         return DatabaseBoolStr(f'{self.name} {self._not} IN {__o}')
-    
+
     def _glob(self, __o: object) -> DatabaseBoolStr:
         return DatabaseBoolStr(f'{self.name} GLOB {__o}')
-    
+
     def _like(self, __o: object) -> DatabaseBoolStr:
         return DatabaseBoolStr(f'{self.name} LIKE {__o}')
 
     def _is_null(self) -> DatabaseBoolStr:
         return DatabaseBoolStr(f'{self.name} IS {self._not} NULL')
-    
+
     def _exists(self, __o: object) -> DatabaseBoolStr:
         return DatabaseBoolStr(f'{self.name} EXISTS {__o}')
-    
+
     def _is(self, __o: object) -> DatabaseBoolStr:
         return DatabaseBoolStr(f'{self.name} IS {self._not} {__o}')
-    
+
+
 class CommandBuilder:
 
     def __init__(self, cls):
@@ -89,7 +101,7 @@ class CommandBuilder:
             name (str, object): table 
         """
         self._class = cls
-        self._name: str = cls.__class__.__name__ if cls.__class__.__name__ != 'type' else cls.__name__  # type: ignore
+        self._name: str = cls.__class__.__name__ if cls.__class__.__name__ != 'type' else cls.__name__
         self._command: str
         self._value: list[Any] = []
         self._handle: str
@@ -101,7 +113,6 @@ class CommandBuilder:
         """
         create this table
         """
-
         self._handle = 'create_table'
         return self
 
@@ -143,7 +154,7 @@ class CommandBuilder:
         self._where = statement
 
     @property
-    def build(self) -> List[Any]:
+    def build(self) -> Tuple[str, Any]:
         """
         构建 SQL 语句
         """
@@ -166,7 +177,7 @@ class CommandBuilder:
 
         if self._where_statement:
             __r += self._where_statement
-        return [__r, self._value]
+        return (__r, self._value)
 
 
 class DataBase(CommandBuilder):
@@ -181,10 +192,10 @@ class DataBase(CommandBuilder):
             database (StrOrBytesPath)
             kwargs (dict)
         """
-        self._data = Dict
+        self._data = Dict[str, Any]
         self._database: Union[str, bytes,
                               PathLike[str], PathLike[bytes]] = database
-        self._command: Deque[List[Any]] = deque()
+        self._command: Deque[Tuple[str, Any]] = deque()
         self.__kwargs: Dict[Any, Any] = kwargs
         self._connection: Connection
         self._cursor: Cursor
@@ -229,18 +240,18 @@ class DataBase(CommandBuilder):
         self._connection.rollback()
         return self
 
-    def get(self) -> List[Any]:
+    def get(self) -> Tuple[str, Any]:
         """
         return last build SQL command
 
         Returns:
             str: SQL command
         """
-        __c: List[Any] = self._command.pop()
+        __c: Tuple[str, Any] = self._command.pop()
         self._command.append(__c)
         return __c
 
-    def pop(self) -> List[Any]:
+    def pop(self) -> Tuple[str, Any]:
         """
         delete and get last build SQL command
         """
@@ -253,18 +264,19 @@ class DataBase(CommandBuilder):
         __command = self._command.pop()
         self._cursor = self._connection.cursor()
 
-        if __command[0].startwish("SELECT"):
+        if __command[0].startswith('SELECT'):
             self._cursor.execute(__command[0])
-            # keys = __command[1]
-            # {i for i in __command[1]: v for v in result}
         else:
             self._cursor.execute(__command[0], __command[1])
         return self
 
-    def table(self, cls: Any):
+    @dataclass_transform()
+    def table(self, cls: type[_T]) -> Type[_T]:
         """
         init tables
         """
+        #replace
+        
         _anno: Dict[str, Any] = cls.__annotations__
         cmd: CommandBuilder = CommandBuilder(cls)
         for i in _anno:
@@ -272,14 +284,16 @@ class DataBase(CommandBuilder):
             setattr(cls, i, DataBaseKey(
                 i, self.get_type(_anno[i]), getattr(cls, i, '')))
         self.append(cmd.create_table().build)
+        
         return cls
+    
 
     def add(self, cls: Model) -> Self:
         """
         add values to tables
         """
-        cmd = CommandBuilder(cls).insert({i: cls.get_values.get(i)
-                                          for i in cls.get_values})
+        cmd = CommandBuilder(cls).insert({i: cls.get_values.get(i) 
+                                        for i in cls.get_values})
         self.append(cmd.build).request()
         return self
 
@@ -287,7 +301,7 @@ class DataBase(CommandBuilder):
         # cmd = CommandBuilder(cls).select()
         return CommandBuilder(cls).select()
 
-    def get_type(self, name: Type[Any]) -> str:
+    def get_type(self, name: Type) -> str:
         """
         Converts type comments in an object to strings
 
@@ -296,17 +310,11 @@ class DataBase(CommandBuilder):
 
         Returns: str
         """
-        types = {str: "TEXT",
-                 int: "INT",
-                 float: "REAL",
-                 bytes: "BLOB",
-                 Optional[str]: "TEXT",
-                 Optional[int]: "INT",
-                 Optional[float]: "REAL",
-                 Optional[bytes]: "BLOB"}
-        return types.get(name, "TEXT")  # type:ignore
 
-    def append(self, command: List[Any]) -> Self:
+        # return types.get(name, "TEXT")
+        return SQL_TYPES.get(name, "TEXT")
+
+    def append(self, command: Tuple[str, Any]) -> Self:
         self._command.appendleft(command)
         return self
 
