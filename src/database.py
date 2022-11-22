@@ -1,10 +1,13 @@
 from collections import deque
 from dataclasses import dataclass
+from email.policy import default
 from os import PathLike
 from sqlite3 import Connection, Cursor, connect
-from typing import Any, Deque, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Deque, Dict, List, Optional, Tuple, Type, TypeVar, Union, overload
 from logging import getLogger
 from typing_extensions import Self, dataclass_transform
+
+from src.utils import Setting
 
 from .model import Model
 
@@ -22,7 +25,7 @@ SQL_TYPES: Dict[Type, str] = {
     Optional[bytes]: "BLOB"}
 
 
-class DatabaseBoolStr:
+class CommandBoolStr:
     def __init__(self, string: str):
         self.string = string
 
@@ -36,59 +39,59 @@ class DatabaseBoolStr:
         return self.string
 
 
-class DataBaseKey(DatabaseBoolStr):
+class CommandKey(CommandBoolStr):
 
-    def __init__(self, name: str, type: str = 'TEXT', other: str = '') -> None:
+    def __init__(self, name: str, type: str = 'TEXT', other: Setting = Setting()) -> None:
         self.name = name
         self.type = type
         self.other = other
         self._not = ''
 
     def __repr__(self) -> str:
-        return f'{self.name} {self.type} {self.other}'
+        return f'{self.name} {self.type} {str(self.other)}'
 
-    def __eq__(self, __o: object) -> DatabaseBoolStr:
-        return DatabaseBoolStr(f'{self.name} == {__o}')
+    def __eq__(self, __o: object) -> CommandBoolStr:
+        return CommandBoolStr(f'{self.name} == {__o}')
 
-    def __lt__(self, __o: object) -> DatabaseBoolStr:
+    def __lt__(self, __o: object) -> CommandBoolStr:
         if self._not == 'NOT':
-            DatabaseBoolStr(f'{self.name} !< {__o}')
-        return DatabaseBoolStr(f'{self.name} < {__o}')
+            CommandBoolStr(f'{self.name} !< {__o}')
+        return CommandBoolStr(f'{self.name} < {__o}')
 
-    def __le__(self, __o: object) -> DatabaseBoolStr:
-        return DatabaseBoolStr(f'{self.name} <= {__o}')
+    def __le__(self, __o: object) -> CommandBoolStr:
+        return CommandBoolStr(f'{self.name} <= {__o}')
 
-    def __ne__(self, __o: object) -> DatabaseBoolStr:
-        return DatabaseBoolStr(f'{self.name} != {__o}')
+    def __ne__(self, __o: object) -> CommandBoolStr:
+        return CommandBoolStr(f'{self.name} != {__o}')
 
-    def __gt__(self, __o: object) -> DatabaseBoolStr:
+    def __gt__(self, __o: object) -> CommandBoolStr:
         if self._not == 'NOT':
-            DatabaseBoolStr(f'{self.name} !> {__o}')
-        return DatabaseBoolStr(f'{self.name} > {__o}')
+            CommandBoolStr(f'{self.name} !> {__o}')
+        return CommandBoolStr(f'{self.name} > {__o}')
 
-    def __ge__(self, __o: object) -> DatabaseBoolStr:
-        return DatabaseBoolStr(f'{self.name} >= {__o}')
+    def __ge__(self, __o: object) -> CommandBoolStr:
+        return CommandBoolStr(f'{self.name} >= {__o}')
 
     def __not__(self):
         self._not = 'NOT'
 
-    def __contains__(self, __o: object) -> DatabaseBoolStr:
-        return DatabaseBoolStr(f'{self.name} {self._not} IN {__o}')
+    def __contains__(self, __o: object) -> CommandBoolStr:
+        return CommandBoolStr(f'{self.name} {self._not} IN {__o}')
 
-    def _glob(self, __o: object) -> DatabaseBoolStr:
-        return DatabaseBoolStr(f'{self.name} GLOB {__o}')
+    def _glob(self, __o: object) -> CommandBoolStr:
+        return CommandBoolStr(f'{self.name} GLOB {__o}')
 
-    def _like(self, __o: object) -> DatabaseBoolStr:
-        return DatabaseBoolStr(f'{self.name} LIKE {__o}')
+    def _like(self, __o: object) -> CommandBoolStr:
+        return CommandBoolStr(f'{self.name} LIKE {__o}')
 
-    def _is_null(self) -> DatabaseBoolStr:
-        return DatabaseBoolStr(f'{self.name} IS {self._not} NULL')
+    def _is_null(self) -> CommandBoolStr:
+        return CommandBoolStr(f'{self.name} IS {self._not} NULL')
 
-    def _exists(self, __o: object) -> DatabaseBoolStr:
-        return DatabaseBoolStr(f'{self.name} EXISTS {__o}')
+    def _exists(self, __o: object) -> CommandBoolStr:
+        return CommandBoolStr(f'{self.name} EXISTS {__o}')
 
-    def _is(self, __o: object) -> DatabaseBoolStr:
-        return DatabaseBoolStr(f'{self.name} IS {self._not} {__o}')
+    def _is(self, __o: object) -> CommandBoolStr:
+        return CommandBoolStr(f'{self.name} IS {self._not} {__o}')
 
 
 class CommandBuilder:
@@ -105,7 +108,7 @@ class CommandBuilder:
         self._command: str
         self._value: list[Any] = []
         self._handle: str
-        self._keys: list[DataBaseKey] = []
+        self._keys: list[CommandKey] = []
         self._cache: Dict[str, Any] = {}
         self._where_statement: str | None = None
 
@@ -116,16 +119,16 @@ class CommandBuilder:
         self._handle = 'create_table'
         return self
 
-    def key(self, name: str, type: str = 'TEXT', other: str = '') -> Self:
+    def key(self, name: str, type: str = 'TEXT', other: Setting = Setting()) -> Self:
         """
-        构建在表中的键
+        build a key with name and type
 
         Args:
             name (str): name.
             type (str): type. default is TEXT.
             other (str): other setting. default is  None. 
         """
-        self._keys.append(DataBaseKey(name, type, other))
+        self._keys.append(CommandKey(name, type, other))
         return self
 
     def delete_table(self) -> Self:
@@ -145,18 +148,19 @@ class CommandBuilder:
         self._cache = values
         return self
 
-    def select(self, *keys: Any) -> Self:
+    def select(self, *keys: str) -> Self:
         self._handle = 'select'
-        self._value = list(keys)
         return self
 
-    def where(self, statement: str | None):
+    def where(self, statement: bool) -> Self:  
+        #the true value is a str
         self._where = statement
+        return self
 
     @property
     def build(self) -> Tuple[str, Any]:
         """
-        构建 SQL 语句
+        build SQL command 
         """
         # python 3.10
         __r: str = ''
@@ -181,7 +185,6 @@ class CommandBuilder:
 
 
 class DataBase(CommandBuilder):
-
     def __init__(self, database: Union[str, bytes, PathLike[str], PathLike[bytes]],
                  **kwargs: Any
                  ):
@@ -195,7 +198,7 @@ class DataBase(CommandBuilder):
         self._data = Dict[str, Any]
         self._database: Union[str, bytes,
                               PathLike[str], PathLike[bytes]] = database
-        self._command: Deque[Tuple[str, Any]] = deque()
+        self._command: Deque[Tuple[str, Any]] = deque() 
         self.__kwargs: Dict[Any, Any] = kwargs
         self._connection: Connection
         self._cursor: Cursor
@@ -275,16 +278,13 @@ class DataBase(CommandBuilder):
         """
         init tables
         """
-        #replace
-        
         _anno: Dict[str, Any] = cls.__annotations__
-        cmd: CommandBuilder = CommandBuilder(cls)
+        cmd: CommandBuilder = CommandBuilder(cls) #init command 
         for i in _anno:
-            cmd.key(i, self.get_type(_anno[i]), getattr(cls, i, ''))
-            setattr(cls, i, DataBaseKey(
-                i, self.get_type(_anno[i]), getattr(cls, i, '')))
+            cmd.key(i, self.get_type(_anno[i]), getattr(cls, i, Setting())) #setting key
+            setattr(cls, i, CommandKey(
+                i, self.get_type(_anno[i]), getattr(cls, i, Setting())))
         self.append(cmd.create_table().build)
-        
         return cls
     
 
@@ -297,9 +297,9 @@ class DataBase(CommandBuilder):
         self.append(cmd.build).request()
         return self
 
-    def select(self, cls: object):
+    def select(self, *cls: object):
         # cmd = CommandBuilder(cls).select()
-        return CommandBuilder(cls).select()
+        return CommandBuilder(*cls).select()
 
     def get_type(self, name: Type) -> str:
         """
@@ -315,9 +315,16 @@ class DataBase(CommandBuilder):
         return SQL_TYPES.get(name, "TEXT")
 
     def append(self, command: Tuple[str, Any]) -> Self:
+        """
+        add SQL command to command list
+
+        Args:
+            command (Tuple[str, Any]): SQL command, value
+        """
         self._command.appendleft(command)
         return self
 
+    #support context manager
     def __enter__(self):
         self.connect()
         return self

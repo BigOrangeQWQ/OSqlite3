@@ -80,19 +80,30 @@
 # out()
 
 # from src.model import Model
+# from src.database import DataBase
 # from src.utils import Setting
 
-from dataclasses import dataclass
-from typing import Any, Deque, Dict, List, Optional, Tuple, Type, TypeVar, Union
-from typing_extensions import dataclass_transform
-from src import Model, Setting, DataBase, DataBaseKey
-import typing 
+# #注册一个数据库
+# db = DataBase("dwda.sqlite")
+
+# @db.table
+# class Test(Model):
+#     omg: str
+#     doing: int = Setting(default=1)
+    
+# with db as s:
+#     s.select(Test,).where(Test.omg == "dwadawd")
 
 
-#注册一个数据库
-db = DataBase("dwda.sqlite")
 
-@db.table
-class Test(Model):
-    omg: str
-    doing: int = Setting(default=1)
+# import requests
+# from lxml import etree
+
+# r = requests.get("https://ncov.dxy.cn/ncovh5/view/pneumonia")
+
+# with open("test.html", "w",encoding='UTF-8') as f:
+#     f.write(r.content.decode())  
+# a  = etree.parse("test.html", etree.HTMLParser())
+# d = (a.xpath("//script[@id='getAreaStat']/text()"))
+
+# print(d)

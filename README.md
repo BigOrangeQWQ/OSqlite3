@@ -10,34 +10,25 @@
 因此此库的确是个人拿来学习并个人使用的  
 所以有需要者请直接下载源码自行使用  
 
-## 创建表
-```py
-from src.database import Database, Model, Setting
-from typing import Optional
 
+## 如何创建表与数据库
+```py
 db = Database("test.sqlite")
 
 @db.table
-class Test(Model):
-    omg: str = Setting(default="default")
-    test: Optional[int]
-```
-或者这样使用
-```py
-from src.database import Database, Model, Setting
-from typing import Optional
 
-db = Database("test.sqlite").connect()
-
-@db.table
 class Test(Model):
     omg: str = Setting(default="default")
     test: Optional[int]
 
 a=Test(omg='test',test=1)
+
 with db.connect() as s:
     s.add(a)
 ```
-## 鸽子计划
-· 支持更多的语句   
-· 支持写入数据库  
+
+## 选择一些元素
+```py
+with db.connect() as s:
+    s.select
+```
